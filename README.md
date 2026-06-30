@@ -16,7 +16,6 @@ A **from-scratch agentic AI system** that autonomously organizes a messy filesys
   - [Stage 5 — Agent Deployment](#stage-5--agent-deployment-agentpy)
 - [The Agentic Loop](#the-agentic-loop)
 - [KV-Cache Optimization](#kv-cache-optimization)
-- [Benchmarks](#benchmarks)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
@@ -156,7 +155,7 @@ A **decoder-only Transformer** (GPT-style) built entirely from scratch in PyTorc
    - Stack of `n_layers` Transformer blocks
    - Final LayerNorm + linear language modeling head
    - **Weight tying** between the token embedding matrix and the output projection head (saves parameters)
-   - Xavier-style weight initialization (mean=0, std=0.02)
+   - GPT-style normal distribution weight initialization (mean=0, std=0.02)
 
 ---
 
@@ -187,7 +186,7 @@ The trained model is deployed as an **autonomous agent** inside a sandboxed dire
 
 | File              | Content                                              | Expected Action        |
 |-------------------|------------------------------------------------------|------------------------|
-| `server_42.log`   | `[ERROR] connection timeout on port 8080`            | MKDIR `/logs` → MOVE   |
+| `server_42.log`   | `This is a test file. [ERROR] connection timeout on port 8080.` | MKDIR `/logs` → MOVE   |
 | `script_99.py`    | `import os\ndef main():\n    print('Hello World')`   | MKDIR `/src` → MOVE    |
 | `vacation.bak`    | `cache dump ignore this corrupted data`              | DELETE                 |
 
@@ -235,25 +234,6 @@ The model implements **KV-caching** in the attention layers. During autoregressi
 
 This optimization is critical for the agent loop where the model generates multiple tokens per action.
 
----
-
-## Benchmarks
-
-Three benchmark scripts are included to validate the KV-cache optimization:
-
-| Script                     | Purpose                                            |
-|----------------------------|----------------------------------------------------|
-| `benchmark_kv.py`          | Quick single-run latency comparison (GPU/CPU)      |
-| `cpu_benchmark.py`         | 5-run averaged CPU-only benchmark (150 tokens)     |
-| `exhaustive_benchmark.py`  | 20-run statistically rigorous benchmark with std dev and warmup |
-
-The exhaustive benchmark includes:
-- **5 warmup runs** to initialize CUDA kernels / PyTorch internals
-- **20 test iterations** for statistical significance
-- Standard deviation reporting
-- Automatic conclusion about the latency reduction claim
-
----
 
 ## Project Structure
 
@@ -269,10 +249,7 @@ agentic_janitor/
 │   ├── tokenizer.py            # Stage 2: Custom BPE tokenizer trainer (vocab=5000)
 │   ├── model.py                # Stage 3: Decoder-only Transformer (~3M params)
 │   ├── train.py                # Stage 4: Training loop (AdamW, 2000 steps)
-│   ├── agent.py                # Stage 5: Autonomous agent with sandbox execution
-│   ├── benchmark_kv.py         # Quick KV-cache benchmark
-│   ├── cpu_benchmark.py        # CPU-focused KV-cache benchmark (5 runs)
-│   └── exhaustive_benchmark.py # Statistically rigorous KV-cache benchmark (20 runs)
+│   └── agent.py                # Stage 5: Autonomous agent with sandbox execution
 │
 ├── data/                       # Generated artifacts (gitignored)
 │   ├── synthetic_dataset.txt   # ~65MB of training sequences
@@ -293,12 +270,11 @@ agentic_janitor/
 - Python 3.10+
 - PyTorch (`torch`)
 - HuggingFace `tokenizers`
-- NumPy (for benchmarks only)
 
 ### Install Dependencies
 
 ```bash
-pip install torch tokenizers numpy
+pip install torch tokenizers
 ```
 
 ### Run the Full Pipeline
@@ -330,13 +306,6 @@ python3 src/train.py          # Train the model
 python3 src/agent.py          # Deploy the agent
 ```
 
-### Run Benchmarks
-
-```bash
-python3 src/benchmark_kv.py          # Quick KV-cache comparison
-python3 src/cpu_benchmark.py         # CPU-only averaged benchmark
-python3 src/exhaustive_benchmark.py  # Full statistical benchmark
-```
 
 ---
 
